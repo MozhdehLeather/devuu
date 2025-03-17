@@ -456,7 +456,7 @@
                     <div class="water-glass">
                         <div class="water-fill" id="water-fill"></div>
                     </div>
-                    <p>Glasses of water today: <span id="water-count">0</span>/8</p>
+                    <p>Glasses of water today: <span id="water-count">0</span>/14</p>
                     <button id="add-water">Add Glass</button>
                     <button id="reset-water">Reset</button>
                 </div>
@@ -845,10 +845,10 @@
 
             $('#add-water').click(function() {
                 let count = parseInt($('#water-count').text());
-                if (count < 8) {
+                if (count < 14) {
                     count++;
                     $('#water-count').text(count);
-                    $('#water-fill').css('height', `${(count / 8) * 100}%`);
+                    $('#water-fill').css('height', `${(count / 14) * 100}%`);
                     updateBadges();
                     saveData();
                 }
