@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumbar Scoliosis & Period Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/5.11.3/main.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f9faff;
+            --text-color: #3c2f5e;
+            --section-bg: #f3e8ff;
+            --routine-bg: #ede9fe;
+            --schedule-bg: #e5e7eb;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #e9d5ff, #fce7f3);
+            margin: 0;
+            padding: 0;
+            color: var(--text-color);
+            overflow-x: hidden;
+            background: var(--bg-color);
+        }
+        .dark-mode {
+            --bg-color: #1f2937;
+            --text-color: #f9fafb;
+            --section-bg: #374151;
+            --routine-bg: #4b5563;
+            --schedule-bg: #6b7280;
+        }
+        .container {
+            display: flex;
+            max-width: 1200px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #c4b5fd, #d8b4fe);
+            color: #fff;
+            padding: 25px;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+        }
+        .sidebar h2 {
+            font-size: 1.6em;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .sidebar a {
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 10px;
+            transition: background 0.3s, transform 0.2s;
+        }
+        .sidebar a:hover {
+            background: #a78bfa;
+            transform: translateX(5px);
+        }
+        .main-content {
+            flex: 1;
+            padding: 35px;
+            overflow-y: auto;
+            background: var(--bg-color);
+        }
+        h1 {
+            color: #6d28d9;
+            text-align: center;
+            font-size: 2.2em;
+            margin-bottom: 25px;
+        }
+        h2 {
+            color: #5b21b6;
+            font-size: 1.6em;
+            margin: 25px 0 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h2:hover::after {
+            content: "▼";
+            font-size: 0.9em;
+            margin-left: 12px;
+        }
+        .section {
+            margin-bottom: 45px;
+            background: var(--section-bg);
+            padding: 25px;
+            border-radius: 15px;
+            transition: all 0.3s;
+        }
+        .section.collapsed {
+            height: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .routine, .diet, .tips {
+            background: var(--routine-bg);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .routine:hover, .diet:hover, .tips:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        .highlight {
+            color: #db2777;
+            font-weight: 600;
+        }
+        .schedule {
+            background: var(--schedule-bg);
+            padding: 18px;
+            border-radius: 12px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .schedule:hover {
+            background: #d1d5db;
+        }
+        .schedule-day {
+            display: none;
+            background: #fce7f3;
+            padding: 12px;
+            margin-top: 8px;
+            border-radius: 10px;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .completed {
+            background: #d1fae5;
+            color: #059669;
+            animation: bounce 0.5s;
+        }
+        @keyframes bounce {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .progress-bar {
+            width: 100%;
+            background: #e5e7eb;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 25px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #c4b5fd, #db2777);
+            width: 0%;
+            transition: width 0.5s;
+        }
+        .hydration-tracker {
+            text-align: center;
+            margin: 25px 0;
+        }
+        .water-glass {
+            width: 120px;
+            height: 180px;
+            background: #e5e7eb;
+            border-radius: 12px 12px 25px 25px;
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .water-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: #60a5fa;
+            transition: height 0.5s;
+        }
+        button {
+            background: #c4b5fd;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 10px;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+            margin: 8px;
+        }
+        button:hover {
+            background: #a78bfa;
+            transform: scale(1.05);
+        }
+        .timer-btn {
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+        .notes-list, .goals-list, .custom-list, .pain-list {
+            padding: 10px;
+            background: var(--bg-color);
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        .note-item, .goal-item, .pain-item {
+            padding: 8px;
+            background: var(--routine-bg);
+            border-radius: 8px;
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        .quote {
+            font-style: italic;
+            color: #db2777;
+            text-align: center;
+            margin: 25px 0;
+            font-size: 1.4em;
+            transition: opacity 0.5s;
+        }
+        .summary {
+            background: #fefcbf;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 25px;
+        }
+        .tooltip {
+            position: relative;
+        }
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            background: #5b21b6;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .badge {
+            background: #d1fae5;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            color: #059669;
+        }
+        .resource {
+            cursor: pointer;
+            padding: 10px;
+            background: var(--routine-bg);
+            border-radius: 8px;
+            margin: 5px 0;
+        }
+        .expand {
+            float: right;
+        }
+        .pain-item {
+            background: #fce7f3;
+        }
+        .motivational-image {
+            text-align: center;
+            margin: 25px 0;
+        }
+        .motivational-image img {
+            max-width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        .period-container {
+            background: var(--section-bg);
+            padding: 15px; /* Reduced padding */
+            border-radius: 12px;
+        }
+        .period-container label {
+            display: block;
+            margin: 5px 0 2px; /* Reduced margin */
+            font-weight: 600;
+            color: #7B3F4E;
+        }
+        .period-container input, 
+        .period-container select, 
+        .period-container textarea {
+            width: 100%;
+            padding: 8px; /* Reduced padding */
+            margin: 2px 0 10px; /* Adjusted margin */
+            border-radius: 8px;
+            border: 2px solid #F8BBD0;
+            background: var(--routine-bg);
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        .period-container button {
+            width: 100%;
+            background: #D81B60;
+            padding: 10px; /* Reduced padding */
+            margin: 5px 0; /* Adjusted margin */
+        }
+        .period-container button:hover {
+            background: #AD1457;
+        }
+        #period-entries table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #period-entries th, #period-entries td {
+            padding: 8px; /* Reduced padding */
+            border: 1px solid #F8BBD0;
+            text-align: center;
+        }
+        #period-entries th {
+            background: #FCE4EC;
+            color: #7B3F4E;
+        }
+        #period-charts canvas {
+            max-width: 100%;
+            height: 300px !important;
+        }
+        #showMorePeriodBtn {
+            width: 50%;
+            margin: 10px auto;
+            display: block;
+        }
+        #period-entries, #period-stats {
+            padding: 10px;
+            background: var(--bg-color);
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+            }
+            .main-content {
+                padding: 20px;
+            }
+            #period-entries {
+                overflow-x: auto;
+            }
+            #period-entries table {
+                min-width: 600px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>Navigation</h2>
+            <a href="#daily-routine">Daily Routine</a>
+            <a href="#morning-routine">Morning Routine</a>
+            <a href="#afternoon-routine">Afternoon Routine</a>
+            <a href="#evening-routine">Evening Routine</a>
+            <a href="#diet-plan">Diet Plan</a>
+            <a href="#tips">Tips</a>
+            <a href="#schedule">30-Day Schedule</a>
+            <a href="#notes">Notes</a>
+            <a href="#summary">Weekly Summary</a>
+            <a href="#goals">Goals</a>
+            <a href="#badges">Badges</a>
+            <a href="#custom-routine">Custom Routine</a>
+            <a href="#resources">Resources</a>
+            <a href="#pain-tracker">Pain Tracker</a>
+            <a href="#progress-chart">Progress Chart</a>
+            <a href="#notifications">Daily Notifications</a>
+            <a href="#tablet-reminder">Tablet Reminder</a>
+            <a href="#motivational-image">Motivational Image</a>
+            <a href="#period-tracker">Period Tracker</a>
+        </div>
+
+        <div class="main-content">
+            <h1>Perfect Routine & Diet Plan for Lumbar Scoliosis</h1>
+            <p style="text-align: center;">A structured routine to improve posture and reduce discomfort.</p>
+            <div class="quote" id="motivational-quote">"My power isn’t in my back... It’s in my unbreakable spirit!" – Naruto Uzumaki</div>
+            <button id="theme-toggle">Toggle Theme</button>
+
+            <div class="section" id="daily-routine">
+                <h2>🕒 Daily Routine</h2>
+                <div class="routine tooltip" data-tooltip="Start your day with energy!">🔹 <span class="highlight">Morning (10-15 min)</span> – Stretching & Warm-up</div>
+                <div class="routine tooltip" data-tooltip="Build strength midday!">🔹 <span class="highlight">Afternoon (15-20 min)</span> – Core Strengthening</div>
+                <div class="routine tooltip" data-tooltip="Wind down effectively!">🔹 <span class="highlight">Evening (10 min)</span> – Relaxation & Posture Fixing</div>
+            </div>
+
+            <div class="section" id="morning-routine">
+                <h2>🧘‍♂️ Morning Routine (15 min)</h2>
+                <p>✅ Goal: Increase flexibility & reduce stiffness</p>
+                <div class="routine">1. Side Stretch (Left) – 3 Sets (20 sec) <button class="timer-btn" data-time="20">Start Timer</button></div>
+                <div class="routine">2. Cat-Cow Stretch – 10 Reps <button class="timer-btn" data-time="60">Start Timer</button></div>
+                <div class="routine">3. Cobra Stretch – 3 Sets (20 sec) <button class="timer-btn" data-time="20">Start Timer</button></div>
+                <div class="routine">4. Child’s Pose – 30 sec Hold <button class="timer-btn" data-time="30">Start Timer</button></div>
+            </div>
+
+            <div class="section" id="afternoon-routine">
+                <h2>🏋️ Afternoon Routine (20 min)</h2>
+                <p>✅ Goal: Strengthen core & stabilize spine</p>
+                <div class="routine">1. Pelvic Tilts – 3 Sets (10 Reps) <button class="timer-btn" data-time="60">Start Timer</button></div>
+                <div class="routine">2. Bridge Pose – 3 Sets (10 Reps) <button class="timer-btn" data-time="60">Start Timer</button></div>
+                <div class="routine">3. Side Plank (Left) – 3 Sets (30 sec) <button class="timer-btn" data-time="30">Start Timer</button></div>
+                <div class="routine">4. Resistance Band Pulls – 10 Reps <button class="timer-btn" data-time="60">Start Timer</button></div>
+            </div>
+
+            <div class="section" id="evening-routine">
+                <h2>🌙 Evening Routine (10 min)</h2>
+                <p>✅ Goal: Fix posture, relax muscles</p>
+                <div class="routine">1. Wall Posture Hold – 3 Sets (30 sec) <button class="timer-btn" data-time="30">Start Timer</button></div>
+                <div class="routine">2. Deep Breathing – 5 min <button class="timer-btn" data-time="300">Start Timer</button></div>
+            </div>
+
+            <div class="section" id="diet-plan">
+                <h2>🥗 Diet Plan for Spinal Health</h2>
+                <p>✅ Focus on: Anti-inflammatory foods & bone health</p>
+                <div class="diet">🔹 Breakfast: Whole grain toast + Avocado + Nuts</div>
+                <div class="diet">🔹 Snack: Fruits (Banana, Berries) + Almonds</div>
+                <div class="diet">🔹 Lunch: Brown Rice + Dal + Veggies (<span class="highlight">Rice 2 days/week</span>)</div>
+                <div class="diet">🔹 Snack: Cottage Cheese + Dry Fruits</div>
+                <div class="diet">🔹 Dinner: Veggie Soup + Whole Wheat Roti</div>
+                <h3>❌ Foods to Avoid:</h3>
+                <div class="diet">🚫 Too much sugar, Processed food, Soda</div>
+            </div>
+
+            <div class="section" id="tips">
+                <h2>🎯 Additional Tips</h2>
+                <div class="tips">✔ Hydrate well (2-3L water daily)</div>
+                <div class="tips">✔ Correct sitting posture</div>
+                <div class="tips">✔ Use a firm mattress</div>
+            </div>
+
+            <div class="section">
+                <h2>💧 Hydration Tracker</h2>
+                <div class="hydration-tracker">
+                    <div class="water-glass">
+                        <div class="water-fill" id="water-fill"></div>
+                    </div>
+                    <p>Glasses of water today: <span id="water-count">0</span>/8</p>
+                    <button id="add-water">Add Glass</button>
+                    <button id="reset-water">Reset</button>
+                </div>
+            </div>
+
+            <div class="section" id="schedule">
+                <h2>📅 30-Day Schedule & Progress</h2>
+                <p>Track your journey (6:00 AM Walking + Routine)</p>
+                <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+                <div class="schedule" data-day="1"><span>Day 1</span><input type="checkbox" class="checkbox" data-day="1"></div>
+                <div class="schedule-day" id="day-1">6:00 AM - Walking (20 min) + Morning Routine</div>
+                <div class="schedule" data-day="2"><span>Day 2</span><input type="checkbox" class="checkbox" data-day="2"></div>
+                <div class="schedule-day" id="day-2">6:00 AM - Walking (20 min) + Morning Routine + Afternoon Routine</div>
+                <div class="schedule" data-day="30"><span>Day 30</span><input type="checkbox" class="checkbox" data-day="30"></div>
+                <div class="schedule-day" id="day-30">6:00 AM - Walking (20 min) + Full Routine</div>
+                <button id="reset-progress">Reset Progress</button>
+            </div>
+
+            <div class="section" id="summary">
+                <h2>📊 Weekly Summary</h2>
+                <div class="summary">
+                    <p>Days Completed: <span id="days-completed">0</span>/30</p>
+                    <p>Weeks Completed: <span id="weeks-completed">0</span>/4</p>
+                    <p>Progress: <span id="progress-percent">0%</span></p>
+                    <p>Hydration Average: <span id="hydration-average">0</span> glasses/day</p>
+                </div>
+                <button id="download-report">Download PDF Report</button>
+                <button id="share-to-kk">Share to KK</button>
+                <button id="share-to-whatsapp">Share to WhatsApp</button>
+            </div>
+
+            <div class="section" id="notes">
+                <h2>📝 Your Notes</h2>
+                <input type="text" id="note-input" placeholder="Type your note here..." style="width: 70%; padding: 10px; border-radius: 8px; border: 1px solid #ddd6fe;">
+                <button id="add-note">Add Note</button>
+                <div class="notes-list" id="notes-list"></div>
+                <p style="font-size: 0.9em; color: #6d28d9; margin-top: 10px;">Notes are saved locally and included in your PDF report.</p>
+            </div>
+
+            <div class="section" id="goals">
+                <h2>🎯 Set Your Goals</h2>
+                <input type="text" id="goal-input" placeholder="e.g., Complete 25 days">
+                <button id="add-goal">Add Goal</button>
+                <div class="goals-list" id="goals-list"></div>
+            </div>
+
+            <div class="section" id="badges">
+                <h2>🏅 Your Badges</h2>
+                <div class="badges-list" id="badges-list"></div>
+            </div>
+
+            <div class="section" id="custom-routine">
+                <h2>✨ Build Your Routine</h2>
+                <input type="text" id="custom-exercise" placeholder="Exercise name">
+                <input type="text" id="custom-details" placeholder="e.g., 3 Sets (20 sec)">
+                <button id="add-custom">Add Exercise</button>
+                <div class="custom-list" id="custom-list"></div>
+            </div>
+
+            <div class="section" id="resources">
+                <h2>📚 Learn About Scoliosis</h2>
+                <div class="resource">What is Lumbar Scoliosis? <span class="expand">▶</span>
+                    <div class="resource-details" style="display: none;">A condition where the spine curves sideways in the lower back...</div>
+                </div>
+                <div class="resource">Benefits of Core Strength <span class="expand">▶</span>
+                    <div class="resource-details" style="display: none;">Improves stability and reduces pain...</div>
+                </div>
+            </div>
+
+            <div class="section" id="pain-tracker">
+                <h2>😣 Pain Tracker</h2>
+                <select id="pain-level">
+                    <option value="">Select Pain Level</option>
+                    <option value="1">1 - Minimal</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5 - Moderate</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10 - Severe</option>
+                </select>
+                <button id="log-pain">Log Pain</button>
+                <div class="pain-list" id="pain-list"></div>
+                <h3>Pain Progress Over Time</h3>
+                <canvas id="painChart"></canvas>
+            </div>
+
+            <div class="section" id="progress-chart">
+                <h2>📈 Progress Chart</h2>
+                <canvas id="progressChart"></canvas>
+            </div>
+
+            <div class="section" id="notifications">
+                <h2>⏰ Daily Notifications</h2>
+                <button id="enable-notifications">Enable Morning Reminder (6:00 AM)</button>
+                <button id="test-notification">Test Notification Now</button>
+                <p style="font-size: 0.9em; color: #6d28d9;">Click to allow browser notifications for a daily reminder!</p>
+            </div>
+
+            <div class="section" id="tablet-reminder">
+                <h2>💊 Tablet Reminder (Every Saturday, 10:45 PM)</h2>
+                <button id="enable-tablet-reminder">Enable Tablet Reminder (2 Months)</button>
+                <p style="font-size: 0.9em; color: #6d28d9;">Get 5 notifications every Saturday from 10:25 PM to 10:45 PM to take your tablet!</p>
+            </div>
+
+            <div class="section" id="motivational-image">
+                <h2>🌟 Motivational Image</h2>
+                <div class="motivational-image">
+                    <img src="https://i.pinimg.com/736x/db/43/5d/db435d40a85f6bb0de52faa88cec2a93.jpg" alt="Motivational Image">
+                    <p class="quote">"Everything will be alright" – Robii</p>
+                </div>
+            </div>
+
+            <div class="section" id="period-tracker">
+                <h2>🩸 Period Tracker</h2>
+                <div class="period-container">
+                    <label>Select Period Day:</label>
+                    <select id="period-day"></select>
+
+                    <label>Select Date:</label>
+                    <input type="date" id="period-date">
+
+                    <label>How do you feel? (Mood):</label>
+                    <select id="period-mood"></select>
+
+                    <label>Flow Intensity:</label>
+                    <select id="period-flow"></select>
+
+                    <label>Average Cycle Length (days):</label>
+                    <input type="number" id="period-cycleLength" min="20" max="40" value="28">
+
+                    <label>Notes:</label>
+                    <textarea id="period-notes" placeholder="Write something..."></textarea>
+
+                    <button id="savePeriodBtn">Add Entry</button>
+
+                    <h3>📅 Your Period Data:</h3>
+                    <div id="period-entries"></div>
+
+                    <h3>📊 Insights:</h3>
+                    <div id="period-stats"></div>
+
+                    <h3>📈 Bleeding & Mood Tracker:</h3>
+                    <div id="period-charts">
+                        <canvas id="periodChart"></canvas>
+                        <button id="showMorePeriodBtn">Show More</button>
+                    </div>
+
+                    <h3>📆 Calendar:</h3>
+                    <div id="period-calendar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { jsPDF } = window.jspdf;
+        let periodChartInstance = null;
+        let periodVisibleDays = 14;
+        const moodOptions = { '🙂': 'Normal', '😖': 'Cramps', '😴': 'Tired', '😊': 'Happy', '😡': 'Moody' };
+        const flowOptions = { '💧': 'Light', '💦': 'Medium', '🌊': 'Heavy' };
+        const flowValues = { '💧': 1, '💦': 2, '🌊': 3 };
+        const moodValues = { '🙂': 3, '😊': 4, '😴': 2, '😖': 1, '😡': 0 };
+
+        function deletePeriodEntry(index) {
+            let entries = JSON.parse(localStorage.getItem("periodEntries")) || [];
+            entries.splice(index, 1);
+            localStorage.setItem("periodEntries", JSON.stringify(entries));
+            updatePeriodDisplays(); // Updates UI without refresh
+        }
+
+        $(document).ready(function() {
+            const quotes = [
+                "My power isn’t in my back... It’s in my unbreakable spirit! – Naruto Uzumaki",
+                "I never give up... I never go back on my word. That’s my ninja way! – Naruto Uzumaki",
+                "Hard work is worthless for those who don’t believe in themselves. – Naruto Uzumaki",
+                "If you don’t like your destiny, don’t accept it. Instead, have the courage to change it! – Naruto Uzumaki"
+            ];
+            let quoteIndex = 0;
+            setInterval(() => {
+                $('#motivational-quote').fadeOut(500, () => {
+                    $('#motivational-quote').text(quotes[quoteIndex]).fadeIn(500);
+                    quoteIndex = (quoteIndex + 1) % quotes.length;
+                });
+            }, 5000);
+
+            $('h2').click(function() {
+                $(this).nextAll('.section').first().toggleClass('collapsed');
+            });
+
+            $('.schedule').click(function() {
+                const day = $(this).data('day');
+                $(`#day-${day}`).slideToggle();
+            });
+
+            for (let i = 3; i <= 29; i++) {
+                $('#schedule').append(`
+                    <div class="schedule" data-day="${i}"><span>Day ${i}</span><input type="checkbox" class="checkbox" data-day="${i}"></div>
+                    <div class="schedule-day" id="day-${i}">6:00 AM - Walking (20 min) + Morning Routine</div>
+                `);
+            }
+
+            for (let i = 1; i <= 7; i++) {
+                $('#period-day').append(`<option value="${i}">Day ${i}</option>`);
+            }
+            $.each(moodOptions, (key, value) => {
+                $('#period-mood').append(`<option value="${key}">${key} ${value}</option>`);
+            });
+            $.each(flowOptions, (key, value) => {
+                $('#period-flow').append(`<option value="${key}">${key} ${value}</option>`);
+            });
+
+            function loadData() {
+                const progress = JSON.parse(localStorage.getItem('progress')) || {};
+                const notes = JSON.parse(localStorage.getItem('notes')) || [];
+                const water = localStorage.getItem('water') || 0;
+                const goals = JSON.parse(localStorage.getItem('goals')) || [];
+                const customRoutine = JSON.parse(localStorage.getItem('customRoutine')) || [];
+                const painData = JSON.parse(localStorage.getItem('painData')) || [];
+                $('.checkbox').each(function() {
+                    const day = $(this).data('day');
+                    if (progress[day]) {
+                        $(this).prop('checked', true);
+                        $(`.schedule[data-day="${day}"]`).addClass('completed');
+                    }
+                });
+                notes.forEach(note => addNoteToList(note.timestamp, note.content));
+                goals.forEach(goal => $('#goals-list').append(`<div class="goal-item">${goal.text} <input type="checkbox" class="goal-check" ${goal.checked ? 'checked' : ''}></div>`));
+                customRoutine.forEach(routine => $('#custom-list').append(`<div class="routine">${routine}</div>`));
+                painData.forEach(data => {
+                    const [timestamp, level] = data.split(': Pain Level ');
+                    $('#pain-list').append(`<div class="pain-item">${data}</div>`);
+                    updatePainChart(timestamp, parseInt(level));
+                });
+                $('#water-count').text(water);
+                $('#water-fill').css('height', `${(water / 8) * 100}%`);
+                updateProgress();
+                updateBadges();
+                updateChart();
+                loadPeriodData();
+            }
+
+            function saveData() {
+                const progress = {};
+                $('.checkbox').each(function() {
+                    progress[$(this).data('day')] = $(this).is(':checked');
+                });
+                const notes = Array.from($('#notes-list .note-item')).map(item => {
+                    const [timestamp, content] = $(item).text().split(': ', 2);
+                    return { timestamp, content };
+                });
+                const goals = Array.from($('#goals-list .goal-item')).map(item => ({
+                    text: $(item).text().replace(/ ✓$/, ''),
+                    checked: $(item).find('.goal-check').is(':checked')
+                }));
+                const customRoutine = Array.from($('#custom-list .routine')).map(item => $(item).text());
+                const painData = Array.from($('#pain-list .pain-item')).map(item => $(item).text());
+                const periodEntries = JSON.parse(localStorage.getItem("periodEntries")) || [];
+                localStorage.setItem('progress', JSON.stringify(progress));
+                localStorage.setItem('notes', JSON.stringify(notes));
+                localStorage.setItem('goals', JSON.stringify(goals));
+                localStorage.setItem('customRoutine', JSON.stringify(customRoutine));
+                localStorage.setItem('painData', JSON.stringify(painData));
+                localStorage.setItem('water', $('#water-count').text());
+                localStorage.setItem("periodEntries", JSON.stringify(periodEntries));
+            }
+
+            function addNoteToList(timestamp, content) {
+                $('#notes-list').append(`<div class="note-item">${timestamp}: ${content}</div>`);
+            }
+
+            $('#add-note').click(function() {
+                const note = $('#note-input').val().trim();
+                if (note) {
+                    const timestamp = new Date().toLocaleString();
+                    addNoteToList(timestamp, note);
+                    $('#note-input').val('');
+                    saveData();
+                }
+            });
+            $('#note-input').keypress(function(e) {
+                if (e.which === 13) $('#add-note').click();
+            });
+
+            $('#add-goal').click(function() {
+                const goal = $('#goal-input').val().trim();
+                if (goal) {
+                    $('#goals-list').append(`<div class="goal-item">${goal} <input type="checkbox" class="goal-check"></div>`);
+                    $('#goal-input').val('');
+                    saveData();
+                }
+            });
+            $(document).on('change', '.goal-check', saveData);
+
+            function updateBadges() {
+                const completedDays = $('.checkbox:checked').length;
+                const waterCount = parseInt($('#water-count').text());
+                $('#badges-list').empty();
+                if (completedDays >= 5) $('#badges-list').append('<div class="badge">5 Days Streak 🥇</div>');
+                if (waterCount >= 8) $('#badges-list').append('<div class="badge">Hydration Master 💧</div>');
+            }
+
+            $('#add-custom').click(function() {
+                const exercise = $('#custom-exercise').val().trim();
+                const details = $('#custom-details').val().trim();
+                if (exercise && details) {
+                    $('#custom-list').append(`<div class="routine">${exercise} – ${details}</div>`);
+                    $('#custom-exercise, #custom-details').val('');
+                    saveData();
+                }
+            });
+
+            $('.resource').click(function() {
+                $(this).find('.resource-details').slideToggle();
+                const expand = $(this).find('.expand');
+                expand.text(expand.text() === '▶' ? '▼' : '▶');
+            });
+
+            const painCtx = $('#painChart')[0].getContext('2d');
+            const painChart = new Chart(painCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Pain Level',
+                        data: [],
+                        borderColor: '#e11d48',
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: { min: 0, max: 10, ticks: { stepSize: 1 } },
+                        x: { title: { display: true, text: 'Date/Time' } }
+                    }
+                }
+            });
+
+            function updatePainChart(timestamp, level) {
+                painChart.data.labels.push(timestamp);
+                painChart.data.datasets[0].data.push(level);
+                if (painChart.data.labels.length > 10) {
+                    painChart.data.labels.shift();
+                    painChart.data.datasets[0].data.shift();
+                }
+                painChart.update();
+            }
+
+            $('#log-pain').click(function() {
+                const level = $('#pain-level').val();
+                if (level) {
+                    const timestamp = new Date().toLocaleString();
+                    const entry = `${timestamp}: Pain Level ${level}`;
+                    $('#pain-list').append(`<div class="pain-item">${entry}</div>`);
+                    updatePainChart(timestamp, parseInt(level));
+                    saveData();
+                }
+            });
+
+            function updateProgress() {
+                let completedDays = $('.checkbox:checked').length;
+                const progress = (completedDays / 30) * 100;
+                $('#progress-fill').css('width', `${progress}%`);
+                $('#days-completed').text(completedDays);
+                $('#weeks-completed').text(Math.floor(completedDays / 7));
+                $('#progress-percent').text(Math.round(progress) + '%');
+                $('#hydration-average').text(Math.round(parseInt($('#water-count').text()) / 30) || 0);
+            }
+
+            $('.checkbox').change(function() {
+                const day = $(this).data('day');
+                if ($(this).is(':checked')) {
+                    $(`.schedule[data-day="${day}"]`).addClass('completed');
+                } else {
+                    $(`.schedule[data-day="${day}"]`).removeClass('completed');
+                }
+                updateProgress();
+                updateBadges();
+                updateChart();
+                saveData();
+            });
+
+            $('#add-water').click(function() {
+                let count = parseInt($('#water-count').text());
+                if (count < 8) {
+                    count++;
+                    $('#water-count').text(count);
+                    $('#water-fill').css('height', `${(count / 8) * 100}%`);
+                    updateBadges();
+                    saveData();
+                }
+            });
+            $('#reset-water').click(function() {
+                $('#water-count').text(0);
+                $('#water-fill').css('height', '0%');
+                updateBadges();
+                saveData();
+            });
+
+            $('#reset-progress').click(function() {
+                if (confirm('Are you sure you want to reset your progress? This will also clear period tracking data.')) {
+                    $('.checkbox').prop('checked', false);
+                    $('.schedule').removeClass('completed');
+                    $('#notes-list, #goals-list, #custom-list, #pain-list').empty();
+                    painChart.data.labels = [];
+                    painChart.data.datasets[0].data = [];
+                    painChart.update();
+                    $('#water-count').text(0);
+                    $('#water-fill').css('height', '0%');
+                    localStorage.removeItem("periodEntries");
+                    updateProgress();
+                    updateBadges();
+                    updateChart();
+                    updatePeriodDisplays();
+                    saveData();
+                }
+            });
+
+            $('#download-report').click(function() {
+                const doc = new jsPDF();
+                doc.setFontSize(16);
+                doc.setTextColor(109, 40, 217);
+                doc.text("Lumbar Scoliosis & Period Tracker Report", 20, 20);
+                doc.setFontSize(12);
+                doc.setTextColor(60, 47, 94);
+                doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 30);
+
+                doc.line(20, 35, 190, 35);
+                doc.text("Progress Summary:", 20, 45);
+                doc.text(`- Days Completed: ${$('#days-completed').text()}/30`, 25, 55);
+                doc.text(`- Progress: ${$('#progress-percent').text()}`, 25, 65);
+                doc.text(`- Weeks Completed: ${$('#weeks-completed').text()}/4`, 25, 75);
+                doc.text(`- Hydration: ${$('#water-count').text()} glasses today (Avg: ${$('#hydration-average').text()} glasses/day)`, 25, 85);
+
+                doc.text("Daily Progress:", 20, 95);
+                let y = 105;
+                Array.from({ length: 30 }, (_, i) => i + 1).forEach(day => {
+                    const status = $('.checkbox[data-day="' + day + '"]').is(':checked') ? 'Completed' : 'Not Completed';
+                    doc.text(`- Day ${day}: ${status}`, 25, y);
+                    y += 10;
+                    if (y > 280) { doc.addPage(); y = 20; }
+                });
+
+                doc.text("Notes:", 20, y + 10); y += 20;
+                const notes = Array.from($('#notes-list .note-item')).map(item => $(item).text());
+                if (notes.length) {
+                    notes.forEach(note => {
+                        doc.text(`- ${note}`, 25, y);
+                        y += 10;
+                        if (y > 280) { doc.addPage(); y = 20; }
+                    });
+                } else {
+                    doc.text("- No notes added.", 25, y); y += 10;
+                }
+
+                doc.text("Goals:", 20, y + 10); y += 20;
+                const goals = Array.from($('#goals-list .goal-item')).map(item => $(item).text());
+                goals.forEach(goal => {
+                    doc.text(`- ${goal}`, 25, y);
+                    y += 10;
+                    if (y > 280) { doc.addPage(); y = 20; }
+                });
+
+                doc.text("Pain Log:", 20, y + 10); y += 20;
+                const painData = Array.from($('#pain-list .pain-item')).map(item => $(item).text());
+                if (painData.length) {
+                    painData.forEach(data => {
+                        doc.text(`- ${data}`, 25, y);
+                        y += 10;
+                        if (y > 280) { doc.addPage(); y = 20; }
+                    });
+                    doc.text("Pain Trend Summary:", 20, y + 10); y += 20;
+                    const avgPain = painChart.data.datasets[0].data.reduce((a, b) => a + b, 0) / painChart.data.datasets[0].data.length || 0;
+                    doc.text(`- Average Pain Level: ${avgPain.toFixed(1)}`, 25, y); y += 10;
+                    const minPain = Math.min(...painChart.data.datasets[0].data) || 0;
+                    const maxPain = Math.max(...painChart.data.datasets[0].data) || 0;
+                    doc.text(`- Pain Range: ${minPain} - ${maxPain}`, 25, y); y += 10;
+                } else {
+                    doc.text("- No pain data logged.", 25, y); y += 10;
+                }
+
+                doc.addPage();
+                doc.text("Period Tracker Data:", 20, y); y += 10;
+                const periodEntries = JSON.parse(localStorage.getItem("periodEntries")) || [];
+                if (periodEntries.length) {
+                    periodEntries.forEach(entry => {
+                        doc.text(`- ${entry.date}: Day ${entry.day}, Mood: ${moodOptions[entry.mood]}, Flow: ${flowOptions[entry.flow]}, Cycle Length: ${entry.cycleLength}, Notes: ${entry.notes || 'None'}`, 25, y);
+                        y += 10;
+                        if (y > 280) { doc.addPage(); y = 20; }
+                    });
+                    doc.text("Period Insights:", 20, y + 10); y += 20;
+                    const day1Entries = periodEntries.filter(e => e.day === "1").sort((a, b) => new Date(a.date) - new Date(b.date));
+                    const cycleLengths = [];
+                    for (let i = 1; i < day1Entries.length; i++) {
+                        const diff = (new Date(day1Entries[i].date) - new Date(day1Entries[i - 1].date)) / (1000 * 60 * 60 * 24);
+                        cycleLengths.push(diff);
+                    }
+                    const avgCycleLength = cycleLengths.length ? (cycleLengths.reduce((a, b) => a + b, 0) / cycleLengths.length).toFixed(1) : "N/A";
+                    const cycleConsistency = cycleLengths.length > 1 ? (Math.max(...cycleLengths) - Math.min(...cycleLengths)).toFixed(1) : "N/A";
+                    const moodCount = {};
+                    periodEntries.forEach(e => moodCount[e.mood] = (moodCount[e.mood] || 0) + 1);
+                    const mostCommonMood = Object.keys(moodCount).reduce((a, b) => moodCount[a] > moodCount[b] ? a : b);
+                    const lastDay1 = day1Entries[day1Entries.length - 1];
+                    let nextPeriod = lastDay1 ? new Date(lastDay1.date) : null;
+                    if (nextPeriod) nextPeriod.setDate(nextPeriod.getDate() + lastDay1.cycleLength);
+                    doc.text(`- Average Cycle Length: ${avgCycleLength === "N/A" ? "Add more Day 1 entries" : avgCycleLength + " days"}`, 25, y); y += 10;
+                    doc.text(`- Cycle Consistency: ${cycleConsistency === "N/A" ? "Add more Day 1 entries" : cycleConsistency + " days"}`, 25, y); y += 10;
+                    doc.text(`- Most Common Mood: ${mostCommonMood} ${moodOptions[mostCommonMood]} (${moodCount[mostCommonMood]} times)`, 25, y); y += 10;
+                    doc.text(`- Next Predicted Period: ${nextPeriod ? nextPeriod.toISOString().split("T")[0] : "Add a Day 1 entry"}`, 25, y); y += 10;
+                } else {
+                    doc.text("- No period data logged.", 25, y); y += 10;
+                }
+
+                doc.setTextColor(219, 39, 119);
+                doc.text("Keep up the great work!", 20, y + 20);
+                doc.save('Scoliosis_Period_Report.pdf');
+            });
+
+            $('#share-to-kk').click(function() {
+                const completedDays = $('#days-completed').text();
+                const progressPercent = $('#progress-percent').text();
+                const waterCount = $('#water-count').text();
+                const notes = Array.from($('#notes-list .note-item')).map(item => $(item).text()).join('\n');
+                const shareText = `
+Hey KK! Here’s my Scoliosis Routine progress:
+- Days Completed: ${completedDays}/30
+- Progress: ${progressPercent}
+- Hydration: ${waterCount} glasses today
+- Notes:
+${notes || 'No notes added.'}
+                `.trim();
+                navigator.clipboard.writeText(shareText).then(() => {
+                    alert('Progress copied to clipboard! Paste it to share with KK.');
+                }).catch(() => {
+                    alert('Failed to copy. Here’s the text:\n' + shareText);
+                });
+            });
+
+            $('#share-to-whatsapp').click(function() {
+                const completedDays = $('#days-completed').text();
+                const progressPercent = $('#progress-percent').text();
+                const waterCount = $('#water-count').text();
+                const notes = Array.from($('#notes-list .note-item')).map(item => $(item).text()).join('\n');
+                const shareText = encodeURIComponent(`
+Hey! Here’s my Scoliosis Routine progress:
+- Days Completed: ${completedDays}/30
+- Progress: ${progressPercent}
+- Hydration: ${waterCount} glasses today
+- Notes:
+${notes || 'No notes added.'}
+                `.trim());
+                window.open(`https://wa.me/?text=${shareText}`, '_blank');
+            });
+
+            $('.timer-btn').click(function() {
+                const time = parseInt($(this).data('time'));
+                let remaining = time;
+                $(this).text(`Time: ${remaining}s`).prop('disabled', true);
+                const interval = setInterval(() => {
+                    remaining--;
+                    $(this).text(`Time: ${remaining}s`);
+                    if (remaining <= 0) {
+                        clearInterval(interval);
+                        $(this).text('Start Timer').prop('disabled', false);
+                        alert('Time’s up!');
+                    }
+                }, 1000);
+            });
+
+            $('#theme-toggle').click(function() {
+                $('body').toggleClass('dark-mode');
+                localStorage.setItem('theme', $('body').hasClass('dark-mode') ? 'dark' : 'light');
+            });
+            if (localStorage.getItem('theme') === 'dark') $('body').addClass('dark-mode');
+
+            const ctx = $('#progressChart')[0].getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`),
+                    datasets: [{
+                        label: 'Completion',
+                        data: Array(30).fill(0),
+                        borderColor: '#db2777',
+                        fill: false
+                    }]
+                },
+                options: { scales: { y: { max: 1, ticks: { stepSize: 1 } } } }
+            });
+
+            function updateChart() {
+                chart.data.datasets[0].data = Array.from({ length: 30 }, (_, i) => 
+                    $('.checkbox[data-day="' + (i + 1) + '"]').is(':checked') ? 1 : 0);
+                chart.update();
+            }
+
+            function showNotification(message) {
+                new Notification("Scoliosis Routine Reminder", {
+                    body: message,
+                    icon: "https://via.placeholder.com/32"
+                });
+            }
+
+            $('#test-notification').click(function() {
+                if (!("Notification" in window)) {
+                    alert("This browser does not support notifications.");
+                } else if (Notification.permission === "granted") {
+                    showNotification("This is a test notification!");
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            showNotification("This is a test notification!");
+                        }
+                    });
+                }
+            });
+
+            $('#enable-notifications').click(function() {
+                if (!("Notification" in window)) {
+                    alert("This browser does not support notifications.");
+                } else if (Notification.permission === "granted") {
+                    startMorningNotificationCheck();
+                    alert("Morning reminder enabled for 6:00 AM daily!");
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            startMorningNotificationCheck();
+                            alert("Morning reminder enabled for 6:00 AM daily!");
+                        }
+                    });
+                }
+            });
+
+            function startMorningNotificationCheck() {
+                setInterval(() => {
+                    const now = new Date();
+                    if (now.getHours() === 6 && now.getMinutes() === 0 && now.getSeconds() === 0) {
+                        showNotification("Time to start your day with your routine at 6:00 AM!");
+                    }
+                }, 1000);
+            }
+
+            $('#enable-tablet-reminder').click(function() {
+                if (!("Notification" in window)) {
+                    alert("This browser does not support notifications.");
+                } else if (Notification.permission === "granted") {
+                    startTabletNotificationCheck();
+                    alert("Tablet reminder enabled for every Saturday at 10:45 PM for 2 months!");
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            startTabletNotificationCheck();
+                            alert("Tablet reminder enabled for every Saturday at 10:45 PM for 2 months!");
+                        }
+                    });
+                }
+            });
+
+            function startTabletNotificationCheck() {
+                const startDate = new Date('2025-03-16');
+                const endDate = new Date(startDate);
+                endDate.setMonth(endDate.getMonth() + 2);
+
+                setInterval(() => {
+                    const now = new Date();
+                    if (now < endDate && now.getDay() === 6) {
+                        const hours = now.getHours();
+                        const minutes = now.getMinutes();
+                        const seconds = now.getSeconds();
+                        if (hours === 22 && minutes >= 25 && minutes <= 45 && seconds === 0) {
+                            const timeLeft = 45 - minutes;
+                            if ([25, 30, 35, 40, 45].includes(minutes)) {
+                                showNotification(`Take your tablet now! (${timeLeft > 0 ? timeLeft : 'Last chance'} min left until 10:45 PM)`);
+                            }
+                        }
+                    }
+                }, 1000);
+            }
+
+            $('#savePeriodBtn').click(savePeriodData);
+            $('#showMorePeriodBtn').click(showMorePeriodData);
+
+            $(document).on('click', '#period-entries button', function() {
+                const index = $(this).closest('tr').index();
+                deletePeriodEntry(index);
+            });
+
+            function savePeriodData() {
+                const entry = {
+                    day: $('#period-day').val(),
+                    date: $('#period-date').val(),
+                    mood: $('#period-mood').val(),
+                    flow: $('#period-flow').val(),
+                    cycleLength: parseInt($('#period-cycleLength').val()),
+                    notes: $('#period-notes').val()
+                };
+                if (!entry.date) {
+                    alert("Please select a date for your period entry.");
+                    return;
+                }
+                let entries = JSON.parse(localStorage.getItem("periodEntries")) || [];
+                entries.push(entry);
+                localStorage.setItem("periodEntries", JSON.stringify(entries));
+                updatePeriodDisplays();
+                $('#period-notes').val('');
+            }
+
+            function displayPeriodEntries() {
+                const entries = JSON.parse(localStorage.getItem("periodEntries")) || [];
+                if (!entries.length) {
+                    $('#period-entries').html('<p>No entries yet. Add one above!</p>');
+                    return;
+                }
+                $('#period-entries').html(`
+                    <table>
+                        <thead>
+                            <tr><th>Date</th><th>Day</th><th>Mood</th><th>Flow</th><th>Cycle Length</th><th>Notes</th><th>Action</th></tr>
+                        </thead>
+                        <tbody>
+                            ${entries.map((e, i) => `
+                                <tr>
+                                    <td>${e.date}</td>
+                                    <td>${e.day}</td>
+                                    <td>${e.mood} ${moodOptions[e.mood]}</td>
+                                    <td>${e.flow} ${flowOptions[e.flow]}</td>
+                                    <td>${e.cycleLength}</td>
+                                    <td>${e.notes}</td>
+                                    <td><button>❌</button></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `);
+            }
+
+            function analyzePeriodData() {
+                const entries = JSON.parse(localStorage.getItem("periodEntries")) || [];
+                if (!entries.length) {
+                    $('#period-stats').html('<p>No data available yet.</p>');
+                    return;
+                }
+                const day1Entries = entries.filter(e => e.day === "1").sort((a, b) => new Date(a.date) - new Date(b.date));
+                const cycleLengths = [];
+                for (let i = 1; i < day1Entries.length; i++) {
+                    const diff = (new Date(day1Entries[i].date) - new Date(day1Entries[i - 1].date)) / (1000 * 60 * 60 * 24);
+                    cycleLengths.push(diff);
+                }
+                const avgCycleLength = cycleLengths.length ? (cycleLengths.reduce((a, b) => a + b, 0) / cycleLengths.length).toFixed(1) : "N/A";
+                const cycleConsistency = cycleLengths.length > 1 ? (Math.max(...cycleLengths) - Math.min(...cycleLengths)).toFixed(1) : "N/A";
+                const moodCount = {};
+                entries.forEach(e => moodCount[e.mood] = (moodCount[e.mood] || 0) + 1);
+                const mostCommonMood = Object.keys(moodCount).reduce((a, b) => moodCount[a] > moodCount[b] ? a : b);
+                const lastDay1 = day1Entries[day1Entries.length - 1];
+                let nextPeriod = lastDay1 ? new Date(lastDay1.date) : null;
+                if (nextPeriod) nextPeriod.setDate(nextPeriod.getDate() + lastDay1.cycleLength);
+
+                $('#period-stats').html(`
+                    <p>Average Cycle Length: ${avgCycleLength === "N/A" ? "Add more Day 1 entries" : avgCycleLength + " days"}</p>
+                    <p>Cycle Consistency: ${cycleConsistency === "N/A" ? "Add more Day 1 entries" : cycleConsistency + " days"}</p>
+                    <p>Most Common Mood: ${mostCommonMood} ${moodOptions[mostCommonMood]} (${moodCount[mostCommonMood]} times)</p>
+                    <p>Next Predicted Period: ${nextPeriod ? nextPeriod.toISOString().split("T")[0] : "Add a Day 1 entry"}</p>
+                `);
+            }
+
+            function updatePeriodChart() {
+                const entries = JSON.parse(localStorage.getItem("periodEntries")) || [];
+                const ctx = $('#periodChart')[0].getContext('2d');
+                if (periodChartInstance) periodChartInstance.destroy();
+                if (!entries.length) {
+                    periodChartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: { datasets: [] },
+                        options: { 
+                            plugins: { 
+                                title: { 
+                                    display: true, 
+                                    text: 'No Data Yet - Add Entries to See Trends!' 
+                                } 
+                            } 
+                        }
+                    });
+                    $('#showMorePeriodBtn').hide();
+                    return;
+                }
+                const sortedEntries = entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+                const recentEntries = sortedEntries.slice(-periodVisibleDays);
+                const labels = recentEntries.map(e => e.date);
+                const flowData = recentEntries.map(e => flowValues[e.flow]);
+                const moodData = recentEntries.map(e => moodValues[e.mood]);
+                $('#showMorePeriodBtn').toggle(sortedEntries.length > periodVisibleDays);
+
+                periodChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                type: 'bar',
+                                label: 'Flow Intensity',
+                                data: flowData,
+                                backgroundColor: flowData.map(val => 
+                                    val === 1 ? 'rgba(173, 216, 230, 0.7)' : 
+                                    val === 2 ? 'rgba(255, 182, 193, 0.7)' : 
+                                    'rgba(255, 99, 132, 0.7)'
+                                ),
+                                borderColor: flowData.map(val => 
+                                    val === 1 ? 'rgba(173, 216, 230, 1)' : 
+                                    val === 2 ? 'rgba(255, 182, 193, 1)' : 
+                                    'rgba(255, 99, 132, 1)'
+                                ),
+                                borderWidth: 1,
+                                barThickness: 20
+                            },
+                            {
+                                type: 'line',
+                                label: 'Mood',
+                                data: moodData,
+                                borderColor: 'rgba(75, 0, 130, 1)',
+                                backgroundColor: 'rgba(75, 0, 130, 0.2)',
+                                fill: false,
+                                tension: 0.4,
+                                pointRadius: 5,
+                                pointHoverRadius: 7
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: { unit: 'day', displayFormats: { day: 'MMM d' } },
+                                title: { display: true, text: 'Date' }
+                            },
+                            y: {
+                                min: 0,
+                                max: 4,
+                                ticks: {
+                                    stepSize: 1,
+                                    callback: value => {
+                                        if (value === 0) return 'Moody 😡';
+                                        if (value === 1) return 'Cramps 😖 / Light 💧';
+                                        if (value === 2) return 'Tired 😴 / Medium 💦';
+                                        if (value === 3) return 'Normal 🙂 / Heavy 🌊';
+                                        if (value === 4) return 'Happy 😊';
+                                        return '';
+                                    }
+                                },
+                                title: { display: true, text: 'Flow / Mood' }
+                            }
+                        },
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    label: context => {
+                                        const entry = recentEntries[context.dataIndex];
+                                        if (context.dataset.label === 'Flow Intensity') {
+                                            return `Flow: ${entry.flow} ${flowOptions[entry.flow]} (${entry.date})`;
+                                        } else {
+                                            return `Mood: ${entry.mood} ${moodOptions[entry.mood]} (${entry.date})${entry.notes ? ' - ' + entry.notes : ''}`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function showMorePeriodData() {
+                periodVisibleDays += 14;
+                updatePeriodChart();
+            }
+
+            function updatePeriodCalendar() {
+                const entries = JSON.parse(localStorage.getItem("periodEntries")) || [];
+                $('#period-calendar').empty();
+                const calendar = new FullCalendar.Calendar($('#period-calendar')[0], {
+                    initialView: window.innerWidth < 768 ? 'listWeek' : 'dayGridMonth',
+                    events: entries.map(entry => ({
+                        title: `🩸 Day ${entry.day}`,
+                        start: entry.date,
+                        backgroundColor: '#D81B60'
+                    })),
+                    height: 'auto'
+                });
+                calendar.render();
+            }
+
+            function loadPeriodData() {
+                updatePeriodDisplays();
+            }
+
+            function updatePeriodDisplays() {
+                displayPeriodEntries();
+                analyzePeriodData();
+                updatePeriodChart();
+                updatePeriodCalendar();
+            }
+
+            loadData();
+        });
+    </script>
+</body>
+</html>
